@@ -1,79 +1,214 @@
 ---
-title: "Core Android Components & Basics"
-description: "Master the foundational elements of the Android operating system."
+title: "Core Components"
+description: "Master Activities, Fragments, Services, and Broadcast Receivers."
 ---
 
-## 1. What are the four main application components in Android?
-The four main components are:
-- **Activities**: The entry point for interacting with the user (represents a single screen).
-- **Services**: General-purpose entry points for keeping an app running in the background for all kinds of reasons.
-- **Broadcast Receivers**: Enable the system to deliver events to the app outside of a regular user flow (e.g., low battery warning).
-- **Content Providers**: Manage a shared set of app data that you can store in the file system, an SQLite database, on the web, or any other persistent storage location.
+## 1. What are the four core components of an Android application?
+The four core components are **Activities**, **Services**, **Broadcast Receivers**, and **Content Providers**.
 
-## 2. What is an `Activity`, and what is its lifecycle?
-An `Activity` provides the window in which the app draws its UI. Its lifecycle methods dictate how it transitions between states:
-- `onCreate()`: Fired when the system creates the activity. You initialize essential components here (like setting the layout).
-- `onStart()`: Makes the activity visible to the user.
-- `onResume()`: The activity comes to the foreground and starts interacting with the user.
-- `onPause()`: The activity is partially obscured or losing focus (e.g., a multi-window mode).
-- `onStop()`: The activity is no longer visible.
-- `onDestroy()`: The activity is finishing or being destroyed by the system.
+```kotlin
+// Declared in AndroidManifest.xml:
+// <activity android:name=".MainActivity" />
+// <service android:name=".MyService" />
+// <receiver android:name=".MyReceiver" />
+// <provider android:name=".MyProvider" />
+```
 
-## 3. What is a `Fragment`, and how does its lifecycle differ from an `Activity`?
-A `Fragment` represents a reusable portion of your app's UI. It must always be hosted in an `Activity`. Its lifecycle is closely tied to its host activity but includes additional methods related to its view:
-- `onAttach()`: Fragment is attached to the Activity.
-- `onCreateView()`: The system calls this to draw the fragment's UI.
-- `onViewCreated()`: Called immediately after `onCreateView()` returns.
-- `onDestroyView()`: Called when the view hierarchy associated with the fragment is being removed.
+## 2. Explain the Activity Lifecycle.
+The lifecycle consists of standard state transitions: `onCreate()` (UI initialization), `onStart()` (becomes visible), `onResume()` (interacts with user), `onPause()` (partially obscured/losing focus), `onStop()` (no longer visible), and `onDestroy()` (removed from memory).
 
-## 4. What is the difference between explicit and implicit Intents?
-- **Explicit Intents**: Specify the exact component (by fully qualified class name) to start. Typically used for internal app navigation (e.g., `Intent(context, TargetActivity::class.java)`).
-- **Implicit Intents**: Do not specify a specific component. Instead, they declare a general action to perform, allowing any app on the device that can handle the action to fulfill the request (e.g., `ACTION_VIEW` for opening a URL).
+```kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.activity_main)
+    println("Activity created")
+}
+```
 
-## 5. Explain `Context` in Android. What is the difference between Application Context and Activity Context?
-`Context` provides access to application-specific resources and classes, as well as up-calls for application-level operations (launching activities, broadcasting intents).
-- **Application Context**: Tied to the lifecycle of the application. It is a singleton and should be used for operations that need a context whose lifecycle is separate from the current context (e.g., initializing a database).
-- **Activity Context**: Tied to the lifecycle of an Activity. Used for UI operations, starting other activities, or inflating layouts. Using it for long-running background tasks causes memory leaks.
+## 3. What is the difference between `onCreate()` and `onStart()`?
+`onCreate()` is called only once during the activity's entire lifetime to initialize the UI and variables. `onStart()` is called every time the activity becomes visible to the user (e.g., when returning to it from another app).
 
-## 6. What is `AndroidManifest.xml`, and why is it essential?
-The Android Manifest file describes essential information about your app to the Android build tools, the Android operating system, and Google Play. It must declare:
-- The app's package name and components (Activities, Services, etc.).
-- Permissions the app requires (e.g., Internet, Camera).
-- Hardware and software features the app requires, determining device compatibility.
+```kotlin
+override fun onStart() {
+    super.onStart()
+    // Register UI broadcast receivers or start animations
+}
+```
 
-## 7. What is a `Service`, and how does a Foreground Service differ from a Background Service?
-A `Service` is a component that performs long-running operations in the background without a UI.
-- **Background Service**: Performs an operation that isn't directly noticed by the user (e.g., compacting storage). Highly restricted by the system in modern Android versions to save battery.
-- **Foreground Service**: Performs an operation noticeable to the user (e.g., playing music). It must display an ongoing Notification to keep the user aware that it's running.
+## 4. What happens to the lifecycle when a Dialog appears over an Activity?
+The Activity's `onPause()` is called because it loses focus but is still partially visible. `onStop()` is NOT called unless the dialog is another activity that is fully opaque and covers the entire screen.
 
-## 8. What is a `BroadcastReceiver`? How do static and dynamic receivers differ?
-A `BroadcastReceiver` listens for system-wide or app-specific broadcast messages.
-- **Static (Manifest-declared)**: Registered in the `AndroidManifest.xml`. Can wake up the app even if it isn't running (highly restricted in modern Android versions).
-- **Dynamic (Context-registered)**: Registered programmatically in an Activity or Service using `registerReceiver()`. It only receives broadcasts as long as the registering context is valid.
+## 5. What are Launch Modes in Android?
+Launch modes define how a new instance of an activity should be associated with the current task. The four main modes are:
+1. `standard` (Default, creates a new instance every time)
+2. `singleTop` (Reuses the top instance if it's already at the top of the stack)
+3. `singleTask` (Creates a new task or clears the stack down to this activity)
+4. `singleInstance` (Activity runs in its own dedicated task).
 
-## 9. What is a `ContentProvider`, and when would you use one?
-A `ContentProvider` manages access to a structured set of data. They encapsulate the data and provide mechanisms for defining data security. You use them primarily when you want to share data with *other* applications (e.g., the Contacts app sharing phone numbers).
+```xml
+<!-- In AndroidManifest.xml -->
+<activity 
+    android:name=".MainActivity"
+    android:launchMode="singleTop" />
+```
 
-## 10. What is a `PendingIntent`, and how is it used?
-A `PendingIntent` is a token that you give to a foreign application (e.g., NotificationManager, AlarmManager), which allows the foreign application to use your app's permissions to execute a predefined piece of code (an Intent) at a later time.
+## 6. What is a Fragment?
+A Fragment represents a reusable portion of the UI. It has its own lifecycle, receives its own input events, and can be added or removed while the host Activity is running.
 
-## 11. How does data passing work between activities using `Intent` extras and `Bundle`?
-Data is passed by putting key-value pairs into the `Intent` using `putExtra()`. Under the hood, these extras are stored in a `Bundle`, which is a dictionary mapping string keys to various Parcelable values. The receiving activity extracts the data using `getIntent().getStringExtra()` or similar methods.
+```kotlin
+class MyFragment : Fragment(R.layout.fragment_my) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Setup UI
+    }
+}
+```
 
-## 12. What is the difference between `Serializable` and `Parcelable`? Why is `Parcelable` preferred in Android?
-- **Serializable**: A standard Java marker interface. It uses reflection for serialization, making it slow and generating many temporary objects (triggering Garbage Collection).
-- **Parcelable**: An Android-specific interface where you explicitly write the code for serializing/deserializing the object. It is much faster and more memory-efficient than Serializable, making it the preferred choice for IPC (Inter-Process Communication) and passing data in Intents.
+## 7. Explain the Fragment Lifecycle.
+It aligns closely with the Activity lifecycle but includes specific UI callbacks: `onAttach()`, `onCreate()`, `onCreateView()` (inflate layout), `onViewCreated()`, `onStart()`, `onResume()`, `onPause()`, `onStop()`, `onDestroyView()` (UI destroyed), `onDestroy()`, `onDetach()`.
 
-## 13. What happens during configuration changes (e.g., screen rotation), and how do you handle them?
-By default, the system destroys and recreates the current `Activity` (and its fragments) to apply alternative resources (like landscape layouts). 
-To handle this:
-- Use `ViewModel` to retain UI state data across the recreation.
-- Use `onSaveInstanceState()` for simple UI state (like scroll position).
-- Alternatively (but rarely recommended), declare `android:configChanges` in the manifest to handle the change manually without recreating the activity.
+```kotlin
+override fun onCreateView(
+    inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+): View? {
+    return inflater.inflate(R.layout.fragment_my, container, false)
+}
+```
 
-## 14. What is the Zygote process in Android execution?
-The Zygote is a special daemon process launched when Android boots. It preloads all core Java classes and Android framework resources. When a new app is launched, instead of starting a new JVM from scratch, Android "forks" the Zygote process, creating a new process that instantly shares the preloaded resources, drastically reducing app startup time and memory footprint.
+## 8. What is the difference between `add()` and `replace()` in FragmentTransaction?
+- `add()` simply stacks the new fragment on top of existing ones (both are active in memory, but the top one is visible).
+- `replace()` removes the existing fragment(s) in the container before adding the new one.
 
-## 15. What are the key differences between the Dalvik Virtual Machine (DVM) and Android Runtime (ART)?
-- **DVM**: Used Just-In-Time (JIT) compilation (compiling code dynamically while the app is running). Slower execution but faster installation. (Used before Android 5.0).
-- **ART**: Uses Ahead-Of-Time (AOT) compilation (compiles bytecode to native machine code during installation) and Profile-Guided JIT. It offers significantly better runtime performance, smoother UI rendering, and more efficient garbage collection, at the cost of slightly larger app sizes on disk.
+```kotlin
+supportFragmentManager.commit {
+    replace(R.id.fragment_container, newFragment)
+    addToBackStack(null) // Allows user to press Back button to reverse
+}
+```
+
+## 9. What is an Intent?
+An Intent is a messaging object used to request an action from another app component (starting an activity, starting a service, or delivering a broadcast).
+
+```kotlin
+val intent = Intent(this, SecondActivity::class.java)
+intent.putExtra("EXTRA_MESSAGE", "Hello")
+startActivity(intent)
+```
+
+## 10. What is the difference between Explicit and Implicit Intents?
+- **Explicit**: Targets a specific component by its exact class name (usually used within the same app).
+- **Implicit**: Declares a general action to perform, allowing the OS to find an app that can handle it (e.g., opening a web URL).
+
+```kotlin
+// Implicit Intent Example
+val intent = Intent(Intent.ACTION_VIEW)
+intent.data = Uri.parse("https://google.com")
+startActivity(intent)
+```
+
+## 11. What is a Service?
+A Service is an application component that can perform long-running operations in the background. It does not provide a user interface.
+
+```kotlin
+class AudioService : Service() {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Play audio in background
+        return START_STICKY
+    }
+    override fun onBind(intent: Intent?): IBinder? = null
+}
+```
+
+## 12. What is the difference between Started and Bound Services?
+- **Started**: Launched via `startService()`. Runs indefinitely until it stops itself (`stopSelf()`) or is stopped by another component.
+- **Bound**: Bound to a component via `bindService()`. Allows client-server interaction. Destroyed when all clients unbind.
+
+```kotlin
+// Binding to a service
+val intent = Intent(this, LocalService::class.java)
+bindService(intent, connection, Context.BIND_AUTO_CREATE)
+```
+
+## 13. What is a Foreground Service?
+A service that performs operations noticeable to the user (like playing music or tracking location). It must display an ongoing Notification in the status bar to keep the OS from killing it.
+
+```kotlin
+val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+    .setContentTitle("Playing Music")
+    .build()
+startForeground(1, notification)
+```
+
+## 14. What is a Broadcast Receiver?
+A component that listens for system-wide or app-specific broadcast announcements (e.g., battery low, screen turned off, custom events).
+
+```kotlin
+class MyReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_BATTERY_LOW) {
+            println("Battery is low!")
+        }
+    }
+}
+```
+
+## 15. What is a Content Provider?
+A component that manages access to a structured set of data. It is the standard way to share data securely between different Android applications (e.g., accessing the Contacts app).
+
+```kotlin
+// Querying the Contacts Content Provider
+val cursor = contentResolver.query(
+    ContactsContract.Contacts.CONTENT_URI,
+    null, null, null, null
+)
+```
+
+## 16. What is a Context in Android?
+`Context` is an abstract class providing global information about an application environment. It allows access to application-specific resources and classes, as well as up-calls for application-level operations (launching activities, broadcasting intents).
+
+```kotlin
+val sharedPrefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+val color = ContextCompat.getColor(context, R.color.black)
+```
+
+## 17. What is the difference between Application Context and Activity Context?
+- **Application Context**: Tied to the lifecycle of the entire application. Use it for singletons or long-living objects to prevent memory leaks.
+- **Activity Context**: Tied to the lifecycle of the specific activity. Contains theme and UI context. Used for displaying dialogs or inflating layouts.
+
+```kotlin
+// Memory Leak: Passing Activity context to a Singleton
+MySingleton.init(this) // BAD
+
+// Correct: Pass Application context
+MySingleton.init(applicationContext) // GOOD
+```
+
+## 18. What is `SavedInstanceState` used for?
+It is a `Bundle` used to save and restore dynamic UI state (like scroll position or user input) during configuration changes (like screen rotations) or process death.
+
+```kotlin
+override fun onSaveInstanceState(outState: Bundle) {
+    super.onSaveInstanceState(outState)
+    outState.putString("USER_TEXT", editText.text.toString())
+}
+```
+
+## 19. What is a PendingIntent?
+It is a wrapper around an Intent that grants another application (like the Notification Manager or AlarmManager) the right to execute the contained Intent as if it were executed by your own app.
+
+```kotlin
+val intent = Intent(this, MainActivity::class.java)
+val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+// Pass pendingIntent to a Notification Builder
+```
+
+## 20. How do you communicate between an Activity and a Fragment?
+Historically, using interface callbacks. Today, the recommended approach is using a shared `ViewModel` scoped to the Activity, which both the Activity and Fragment can observe.
+
+```kotlin
+// Shared ViewModel approach
+val viewModel: SharedViewModel by activityViewModels()
+viewModel.selectedItem.observe(viewLifecycleOwner) { item ->
+    // Update UI
+}
+```

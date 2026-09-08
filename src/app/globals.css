@@ -9,6 +9,12 @@
   --accent-secondary: #8b5cf6;
   --bg-glass: rgba(255, 255, 255, 0.7);
   --border-color: rgba(0, 0, 0, 0.08);
+  --kotlin-color: #B125EA;
+  --android-color: #3DDC84;
+  --flutter-color: #02569B;
+  --java-color: #f89820;
+  --dsa-color: #FF5722;
+  --python-color: #306998;
 }
 
 * {

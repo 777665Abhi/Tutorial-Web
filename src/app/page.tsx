@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -29,6 +30,20 @@ export default function Home() {
       color: 'var(--java-color)',
       icon: '☕',
       slug: 'java'
+    },
+    {
+      title: 'Data Structures',
+      description: 'Master core CS fundamentals, algorithms, and problem-solving patterns.',
+      color: 'var(--dsa-color)',
+      icon: '🧠',
+      slug: 'dsa'
+    },
+    {
+      title: 'Python',
+      description: 'Learn Python programming, from basics to machine learning and web frameworks.',
+      color: 'var(--python-color)',
+      icon: '🐍',
+      slug: 'python'
     }
   ];
 
@@ -60,6 +75,20 @@ export default function Home() {
       color: 'var(--java-color)',
       icon: '💬',
       slug: 'java-interview'
+    },
+    {
+      title: 'DSA Interview Qs',
+      description: 'Ace technical rounds with top Data Structures and Algorithms questions.',
+      color: 'var(--dsa-color)',
+      icon: '💬',
+      slug: 'dsa-interview'
+    },
+    {
+      title: 'Python Interview Qs',
+      description: 'Prepare for data science, backend, and automation Python interviews.',
+      color: 'var(--python-color)',
+      icon: '💬',
+      slug: 'python-interview'
     }
   ];
 
@@ -74,8 +103,8 @@ export default function Home() {
           Premium, in-depth tutorials for Kotlin, Java, Android, and Flutter. Elevate your development skills with our comprehensive guides.
         </p>
         <div className="flex gap-4">
-          <a href="#topics" className="btn btn-primary">Start Learning</a>
-          <a href="#interviews" className="btn btn-secondary">Prep for Interviews</a>
+          <Link href="#topics" className="btn btn-primary">Start Learning</Link>
+          <Link href="#interviews" className="btn btn-secondary">Prep for Interviews</Link>
         </div>
       </section>
 
@@ -84,7 +113,7 @@ export default function Home() {
       </div>
       <section id="topics" className={styles.grid}>
         {topics.map((topic) => (
-          <a 
+          <Link 
             key={topic.slug}
             href={`/tutorials/${topic.slug}`}
             className={`glass-panel ${styles.card}`}
@@ -95,7 +124,7 @@ export default function Home() {
             </div>
             <h2 className={styles.cardTitle}>{topic.title}</h2>
             <p className={styles.cardDesc}>{topic.description}</p>
-          </a>
+          </Link>
         ))}
       </section>
 
@@ -104,7 +133,7 @@ export default function Home() {
       </div>
       <section className={styles.grid}>
         {interviewTopics.map((topic) => (
-          <a 
+          <Link 
             key={topic.slug}
             href={`/tutorials/${topic.slug}`}
             className={`glass-panel ${styles.card}`}
@@ -115,7 +144,7 @@ export default function Home() {
             </div>
             <h2 className={styles.cardTitle}>{topic.title}</h2>
             <p className={styles.cardDesc}>{topic.description}</p>
-          </a>
+          </Link>
         ))}
       </section>
     </div>

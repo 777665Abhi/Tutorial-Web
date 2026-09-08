@@ -1,74 +1,192 @@
 ---
 title: "Kotlin & Concurrency"
-description: "Deep dive into Coroutines, Flows, and Kotlin language features."
+description: "Coroutines, Flows, Dispatchers, and asynchronous programming."
 ---
 
-## 31. What are Kotlin Coroutines, and how do they differ from Java Threads?
-Coroutines are a lightweight concurrency framework in Kotlin. Unlike Java threads (which map 1-to-1 to expensive OS threads), coroutines are managed entirely by the Kotlin runtime. You can run thousands of coroutines on a single background thread without crashing due to Out-Of-Memory errors because they suspend their execution rather than blocking the underlying thread.
+## 1. What are Coroutines in Android?
+Coroutines are a concurrency design pattern used on Android to simplify code that executes asynchronously. They help manage long-running tasks that might otherwise block the main thread and cause the app to freeze.
 
-## 32. What is the difference between `launch` and `async` coroutine builders?
-- **`launch`**: Starts a new coroutine that does not return a result. It returns a `Job` object, which can be used to cancel the coroutine. Used for "fire-and-forget" tasks.
-- **`async`**: Starts a new coroutine that returns a result in the form of a `Deferred<T>` (which is a subclass of `Job`). You use `.await()` to retrieve the result when it's ready.
+```kotlin
+viewModelScope.launch {
+    // This coroutine runs asynchronously without blocking the UI thread
+    val data = fetchNetworkData()
+}
+```
 
-## 33. Explain `suspend` functions and how structured concurrency works in Kotlin.
-A `suspend` function is a function that can pause the execution of a coroutine without blocking the thread, allowing other coroutines to use that thread. 
-**Structured Concurrency** is the principle that coroutines must be launched within a specific `CoroutineScope`. This ensures that all launched coroutines are properly tracked, and if a scope is cancelled, all child coroutines are automatically cancelled, preventing resource leaks.
+## 2. Why are Coroutines better than RxJava or AsyncTasks?
+They are much more lightweight, simpler to read (asynchronous code looks sequential), natively integrated into Kotlin, and intrinsically lifecycle-aware when used with structured concurrency (like `viewModelScope`).
 
-## 34. What is the difference between `Dispatchers.Main`, `Dispatchers.IO`, and `Dispatchers.Default`?
-- **`Main`**: Runs on the Android Main UI thread. Used for interacting with the UI.
-- **`IO`**: Optimized for disk and network I/O operations (e.g., reading files, database queries). It uses a dynamically expanding thread pool.
-- **`Default`**: Optimized for CPU-intensive work (e.g., parsing JSON, sorting large lists). Its thread pool size is limited to the number of CPU cores.
+## 3. What is a `suspend` function?
+A function that can be paused (suspended) and resumed later. It can only be called from a coroutine or another `suspend` function.
 
-## 35. What is a `SupervisorJob`, and how does exception propagation work in coroutines?
-Normally, if a child coroutine fails with an exception, it cancels its parent and all sibling coroutines.
-A `SupervisorJob` changes this behavior: if a child fails, the failure does not propagate upwards. The parent and sibling coroutines continue running undisturbed. This is heavily used in Android's `viewModelScope`.
+```kotlin
+suspend fun getUserData(): User {
+    delay(1000) // Non-blocking delay
+    return User("Alice")
+}
+```
 
-## 36. What is the difference between `Flow`, `StateFlow`, and `SharedFlow`?
-- **`Flow`**: A *cold* asynchronous data stream. It only executes and emits values when someone calls `collect()`. Every collector gets its own independent stream of data.
-- **`SharedFlow`**: A *hot* stream. It emits values regardless of whether there are collectors. Multiple collectors share the same stream and receive the same emitted values (like a broadcast).
-- **`StateFlow`**: A specialized `SharedFlow` that always holds a single "state" value. It requires an initial value and only emits when the value actually changes.
+## 4. What are Dispatchers in Coroutines?
+Dispatchers determine which thread or thread pool the coroutine uses for its execution.
+- `Dispatchers.Main`: For UI operations on the main thread.
+- `Dispatchers.IO`: For network or disk operations.
+- `Dispatchers.Default`: For heavy CPU computation.
 
-## 37. Explain backpressure and how `channelFlow` differs from `flow`.
-**Backpressure** occurs when a flow produces elements faster than the collector can consume them.
-A standard `flow` is strictly sequential (emission waits for the collector). 
-`channelFlow` runs the producer and collector in separate coroutines linked by a Channel buffer. This allows the producer to keep emitting values into the buffer concurrently, mitigating backpressure if the collector is temporarily slow.
+```kotlin
+launch(Dispatchers.IO) {
+    // Network request here
+}
+```
 
-## 38. What are Kotlin `Sealed Classes` and `Sealed Interfaces`, and how are they used in state management?
-Sealed classes restrict class hierarchies: all subclasses must be declared in the same package/module. They allow the compiler to perform exhaustive `when` checks.
-They are heavily used in Android to represent UI States (e.g., `Loading`, `Success(data)`, `Error(exception)`), ensuring the UI handles every possible state gracefully.
+## 5. How do you switch threads in Coroutines?
+Use the `withContext(Dispatcher)` function. It suspends until the block completes on the specified dispatcher, then resumes on the original dispatcher.
 
-## 39. What is the `inline` keyword, and what are `reified` type parameters in Kotlin?
-- **`inline`**: Tells the compiler to copy the function's bytecode directly into the call site rather than creating a new object and method call (optimizing higher-order functions like `map` or `filter`).
-- **`reified`**: Normally, generic types are erased at runtime (Type Erasure). By marking an `inline` function's generic type as `reified`, you can access the actual class type at runtime (e.g., `if (T::class == String::class)`).
+```kotlin
+suspend fun fetchAndShowData() {
+    // Switch to IO thread for DB read
+    val data = withContext(Dispatchers.IO) {
+        db.readData()
+    }
+    // Automatically switches back to Main thread
+    showOnUI(data) 
+}
+```
 
-## 40. What are `delegated properties` (`by lazy`, `by Delegates.observable()`) in Kotlin?
-Property delegation offloads the getter/setter logic of a property to a separate object.
-- **`by lazy`**: Defers initialization until the property is accessed for the first time. The result is cached for future calls.
-- **`by Delegates.observable()`**: Allows you to execute a callback block every time the property's value changes.
+## 6. What is Structured Concurrency in Android?
+It ensures that coroutines are not lost and don't leak memory. Every coroutine must be started in a specific `CoroutineScope`. When the scope is canceled (e.g., when a ViewModel is cleared), all coroutines running in that scope are automatically canceled.
 
-## 41. What is the difference between `var`, `val`, and `const val`?
-- **`var`**: A mutable variable that can be reassigned.
-- **`val`**: A read-only variable. It cannot be reassigned after initialization, but its internal properties can change if it's an object.
-- **`const val`**: A compile-time constant. Its value must be known at compile time, and it is inlined directly into the bytecode where it is used (improving performance).
+## 7. What is `viewModelScope`?
+A predefined `CoroutineScope` tied to the lifecycle of a `ViewModel`. It is automatically canceled when the `ViewModel` is cleared, preventing memory leaks and crashes.
 
-## 42. How does Kotlin handle Null Safety (`?`, `?.`, `?:`, `!!`) under the hood?
-Kotlin distinguishes nullable (`String?`) and non-nullable (`String`) types at compile-time to prevent NullPointerExceptions.
-- `?.` (Safe Call): Returns null if the object is null instead of throwing an exception.
-- `?:` (Elvis Operator): Provides a default value if the expression on the left is null.
-- `!!` (Not-null Assertion): Forces the compiler to treat a value as non-null, throwing an NPE if it actually is null.
+```kotlin
+class MyViewModel : ViewModel() {
+    fun load() {
+        viewModelScope.launch {
+            // Safely perform work
+        }
+    }
+}
+```
 
-## 43. What are Scope Functions (`let`, `run`, `with`, `apply`, `also`), and how do you choose between them?
-Scope functions execute a block of code within the context of an object.
-- **`let` / `also`**: The object is referenced as `it`. `let` returns the lambda result; `also` returns the object itself (useful for logging).
-- **`run` / `apply` / `with`**: The object is referenced as `this`. `run`/`with` return the lambda result; `apply` returns the object itself (useful for configuration).
+## 8. What is `lifecycleScope`?
+A predefined `CoroutineScope` tied to the lifecycle of an `Activity` or `Fragment`. It is automatically canceled when the Activity/Fragment is destroyed.
 
-## 44. What are `Extension Functions`, and how do they work under the hood?
-Extension functions allow you to add new functions to existing classes without inheriting from them. 
-Under the hood, Kotlin compiles them into standard static Java methods where the receiver object (the class being extended) is passed as the first implicit parameter.
+```kotlin
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            // Cancelled when Activity is destroyed
+        }
+    }
+}
+```
 
-## 45. What is the difference between `data class` and a standard class in Kotlin?
-A `data class` is explicitly designed to hold data. The compiler automatically generates useful boilerplate code for it based on the properties declared in the primary constructor:
-- `equals()` and `hashCode()` for accurate comparisons.
-- `toString()` for readable logging.
-- `copy()` for immutability.
-- `componentN()` functions for destructuring declarations.
+## 9. How do you handle exceptions in Coroutines?
+You can use standard `try/catch` blocks inside the coroutine, or attach a `CoroutineExceptionHandler` to the context.
+
+```kotlin
+viewModelScope.launch {
+    try {
+        val data = repo.getData()
+    } catch (e: Exception) {
+        // Handle network error
+    }
+}
+```
+
+## 10. What is `SupervisorJob`?
+In standard coroutines, if a child coroutine fails, it cancels its parent and all siblings. A `SupervisorJob` isolates failures, so if one child fails, the others continue running. `viewModelScope` uses a `SupervisorJob` under the hood.
+
+```kotlin
+val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+scope.launch { throw Exception("Fails") } // Doesn't crash other children
+scope.launch { println("Runs fine") }
+```
+
+## 11. What is Kotlin Flow?
+Flow is an asynchronous data stream that sequentially emits values and completes normally or with an exception. It is the modern Kotlin alternative to RxJava's Observable.
+
+```kotlin
+fun getTimerFlow(): Flow<Int> = flow {
+    for (i in 1..5) {
+        delay(1000)
+        emit(i) // Emits value every second
+    }
+}
+```
+
+## 12. What is the difference between Hot and Cold Streams?
+- **Cold Stream (Flow)**: Starts emitting values *only* when an observer starts collecting it. The stream is created fresh for each collector.
+- **Hot Stream (StateFlow, Channel)**: Emits values even if there are no collectors. Multiple collectors share the same stream.
+
+## 13. What is `StateFlow`?
+A state-holder observable flow that emits the current and new state updates to its collectors. It is a Hot stream and always requires an initial value. It is the modern replacement for `LiveData`.
+
+```kotlin
+private val _uiState = MutableStateFlow(UiState.Loading)
+val uiState: StateFlow<UiState> = _uiState
+
+fun loadData() {
+    _uiState.value = UiState.Success("Data loaded")
+}
+```
+
+## 14. What is the difference between `StateFlow` and `LiveData`?
+Both hold state, but `StateFlow` requires an initial value, supports full Coroutine/Flow operators (like `map`, `filter`), and is not lifecycle-aware by itself (you must collect it safely using `repeatOnLifecycle`).
+
+## 15. What is `SharedFlow`?
+A Hot flow designed to emit events (like a snackbar trigger or navigation event) rather than hold state. It does not require an initial value, and if a collector is not collecting at the moment of emission, the event is lost (unless `replay` is configured).
+
+```kotlin
+private val _events = MutableSharedFlow<String>()
+val events: SharedFlow<String> = _events
+
+viewModelScope.launch {
+    _events.emit("Show Toast")
+}
+```
+
+## 16. How do you safely collect a Flow in the UI?
+Because Flows are not lifecycle-aware, collecting them directly in `onCreate` will keep the flow running even when the app is in the background. Use `repeatOnLifecycle` or `flowWithLifecycle` to pause collection when the UI is hidden.
+
+```kotlin
+lifecycleScope.launch {
+    repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.uiState.collect { state ->
+            // Update UI safely
+        }
+    }
+}
+```
+
+## 17. What are Channels?
+Channels are a communication primitive that allows passing a stream of values between different coroutines concurrently. They are fundamentally Hot streams and buffer items.
+
+```kotlin
+val channel = Channel<Int>()
+launch { channel.send(1) }
+launch { println(channel.receive()) }
+```
+
+## 18. What does `flowOn()` do?
+It changes the `CoroutineDispatcher` for the upstream Flow operations (the code *above* `flowOn`), leaving the downstream operations unaffected.
+
+```kotlin
+repo.getDataFlow()
+    .map { it.toUiModel() }
+    .flowOn(Dispatchers.IO) // Everything above runs on IO
+    .collect { /* Runs on Main thread */ }
+```
+
+## 19. What is the difference between `launch` and `async`?
+- `launch`: Fire-and-forget. Returns a `Job`. Doesn't return a result.
+- `async`: Performs a calculation and returns a `Deferred` (which inherits from `Job`). You call `.await()` on the `Deferred` to get the result.
+
+```kotlin
+val deferredResult = async { computeValue() }
+println(deferredResult.await())
+```
+
+## 20. What is `runBlocking` and when should you use it?
+It blocks the current thread until the coroutine completes. It is strictly meant for bridging synchronous and asynchronous code, primarily used in **Unit Tests** or `main` functions, but **never** in Android production code (it will block the UI thread).

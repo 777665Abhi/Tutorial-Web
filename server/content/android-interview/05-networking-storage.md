@@ -1,76 +1,154 @@
 ---
-title: "Networking & Data Storage"
-description: "Understanding REST APIs, Retrofit, OkHttp, and Android storage mechanisms."
+title: "Networking & Storage"
+description: "Retrofit, OkHttp, File storage, and the Android permissions model."
 ---
 
-## 61. How does `Retrofit` work internally with `OkHttp`?
-Retrofit is a type-safe HTTP client that acts as a wrapper around OkHttp. When you define an interface with Retrofit annotations (`@GET`, `@POST`), Retrofit uses a Java dynamic proxy to generate the network request implementation at runtime. It then delegates the actual TCP/IP connection, connection pooling, and payload transmission to the underlying `OkHttp` client.
+## 1. What is Retrofit?
+Retrofit is a type-safe HTTP client for Android and Java developed by Square. It makes it incredibly easy to consume RESTful APIs by turning a Java/Kotlin interface into an executable HTTP API call.
 
-## 62. What is an `Interceptor` in OkHttp, and what are common use cases (e.g., auth tokens)?
-An `Interceptor` is a powerful OkHttp mechanism that can monitor, rewrite, and retry network calls. 
-Common use cases include:
-- **Application Interceptor**: Adding a global `Authorization: Bearer <token>` header to every outgoing request.
-- **Network Interceptor**: Logging raw network responses (e.g., via `HttpLoggingInterceptor`) or transparently managing GZIP compression.
+```kotlin
+interface ApiService {
+    @GET("users/{user}/repos")
+    suspend fun listRepos(@Path("user") user: String): List<Repo>
+}
+```
 
-## 63. How do you handle token refresh mechanisms using OkHttp `Authenticator`?
-While you could use an Interceptor to check for 401 Unauthorized errors, OkHttp provides an `Authenticator` interface specifically for this. 
-When a request fails with a 401, the `Authenticator`'s `authenticate()` method is called automatically. Inside, you can make a synchronous network call to fetch a new token, attach the new token to the original request, and return it. OkHttp will automatically retry the original request.
+## 2. How does Retrofit work under the hood?
+Retrofit uses **Dynamic Proxies** (Reflection) to intercept calls to the interface methods. It parses the annotations on the method to construct an HTTP request, delegates the actual network call to **OkHttp**, and then uses a **Converter** (like Moshi or Gson) to deserialize the JSON response into Kotlin objects.
 
-## 64. What is `DataStore` (Preferences & Proto), and why does it replace `SharedPreferences`?
-Jetpack DataStore is a modern data storage solution.
-- **Preferences DataStore**: Stores key-value pairs (like SharedPreferences) but runs asynchronously using Kotlin Coroutines and Flows, preventing UI thread blocking.
-- **Proto DataStore**: Stores typed objects backed by Protocol Buffers, providing type safety.
-It replaces `SharedPreferences` because the latter is fully synchronous (causing ANRs), lacks type safety, and is highly prone to runtime parsing errors.
+## 3. What is OkHttp?
+OkHttp is the underlying HTTP/2 client used by Retrofit. It handles connection pooling, transparent GZIP compression, response caching, and recovery from network problems.
 
-## 65. What are the security risks associated with `SharedPreferences`?
-Standard `SharedPreferences` stores data as plain XML files in the app's internal directory. If a device is rooted, malicious apps can easily read this file, exposing sensitive data like authentication tokens or PII. For sensitive data, `EncryptedSharedPreferences` (from the security-crypto library) must be used.
+```kotlin
+val client = OkHttpClient.Builder()
+    .connectTimeout(10, TimeUnit.SECONDS)
+    .build()
+```
 
-## 66. How does certificate pinning work in Android networking, and why is it used?
-Certificate Pinning hardcodes the hash (pin) of the server's public key certificate directly into the Android app (often using OkHttp's `CertificatePinner`).
-It is used to prevent Man-in-the-Middle (MITM) attacks. Even if a user installs a malicious root certificate on their device, the app will reject the connection because the server's certificate doesn't match the hardcoded pin.
+## 4. What is an OkHttp Interceptor?
+A mechanism in OkHttp that allows you to observe, modify, and potentially short-circuit requests going out and the corresponding responses coming back. Heavily used for adding authorization headers or logging.
 
-## 67. What is Scoped Storage in Android, and how does media storage access work?
-Introduced in Android 10, Scoped Storage restricts an app's access to the device's file system. Apps can no longer freely read/write anywhere. 
-- Apps get unrestricted access to their own app-specific directories.
-- To access shared media (Photos, Videos, Audio), apps must use the `MediaStore` API and request specific read permissions.
+```kotlin
+class AuthInterceptor(val token: String) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request().newBuilder()
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+        return chain.proceed(request)
+    }
+}
+```
 
-## 68. How do you optimize network payload sizes and implement API response caching?
-Optimization strategies include:
-- **GZIP Compression**: Enabling GZIP on the server and OkHttp (enabled by default) to compress JSON text.
-- **Protobuf**: Using Protocol Buffers instead of JSON for smaller binary payloads.
-- **OkHttp Cache**: Configuring a `Cache` size on the OkHttpClient. If the server sends `Cache-Control` headers, OkHttp will automatically serve cached responses when offline or within the valid max-age limit.
+## 5. How do you handle file uploads in Retrofit?
+Use the `@Multipart` annotation and pass a `MultipartBody.Part` parameter containing the file data and mime type.
 
-## 69. What is WebSocket, and how do you manage persistent real-time connections in Android?
-WebSocket is a protocol that provides full-duplex, persistent communication over a single TCP connection, ideal for chat apps or live trading.
-In Android, you typically use OkHttp's `newWebSocket()` method. You must manage the connection lifecycle manually, responding to `onMessage`, reconnecting on failures (`onClosed`/`onFailure`), and keeping the connection alive using ping/pong frames.
-
-## 70. How do Firebase Cloud Messaging (FCM) push notification flows work?
-1. The app requests an FCM token from Google Play Services and sends it to your backend server.
-2. The backend sends a message payload targeted to that token via the FCM API.
-3. Google routes the message to the specific device.
-4. If it's a **Notification message**, the Android system automatically displays it in the system tray.
-5. If it's a **Data message**, it triggers your app's `FirebaseMessagingService.onMessageReceived()`, allowing you to execute background code and build a custom notification manually.
-
-## 71. What is GraphQL and how do you use it in Android (Apollo)?
-GraphQL is a query language for APIs that allows clients to request exactly the data they need, no more and no less, preventing over-fetching. 
-In Android, this is implemented using the **Apollo Kotlin** library. Apollo generates type-safe models from your GraphQL queries at compile time and executes them asynchronously, supporting caching and real-time subscriptions over WebSockets.
-
-## 72. How do you handle file uploads in Retrofit (Multipart)?
-To upload a file, you annotate the Retrofit interface method with `@Multipart` and pass the file as an `@Part MultipartBody.Part`.
 ```kotlin
 @Multipart
 @POST("upload")
-suspend fun uploadFile(@Part file: MultipartBody.Part): Response<UploadResult>
+suspend fun uploadFile(
+    @Part file: MultipartBody.Part
+): ResponseBody
 ```
-You convert a local `File` to a `RequestBody` (specifying the media type), and then create the `MultipartBody.Part` using `FormData` to send it over the network.
 
-## 73. What is the difference between Cache-Control and ETag headers?
-- **Cache-Control**: Tells OkHttp how long a response is valid (e.g., `max-age=3600`). OkHttp serves from the cache directly without hitting the network until the age expires.
-- **ETag**: A unique identifier for a specific version of a resource. OkHttp sends the ETag to the server. If the data hasn't changed, the server replies with a lightweight `304 Not Modified`, telling OkHttp it's safe to use its cached version.
+## 6. What is the difference between `@Path`, `@Query`, and `@Body` in Retrofit?
+- `@Path`: Replaces a placeholder in the URL path (e.g., `users/{id}`).
+- `@Query`: Appends a query parameter to the URL (e.g., `?sort=desc`).
+- `@Body`: Attaches a serialized Kotlin object as the payload of a POST/PUT request.
 
-## 74. How does `EncryptedFile` work in the Jetpack Security library?
-`EncryptedFile` provides a transparent layer of encryption over standard `File` I/O. It streams the data through a cipher using keys backed by the Android Keystore. This ensures that even if an attacker gains root access to the device's internal storage, any files saved by your app (e.g., downloaded PDFs, cached images) remain unreadable.
+## 7. What is Scoped Storage in Android?
+Introduced in Android 10, Scoped Storage restricts app access to external storage. Apps can only access their own app-specific directory and specific types of media (photos, videos, audio) via the MediaStore API, without needing broad read/write storage permissions.
 
-## 75. What is the DownloadManager and when should it be used instead of Retrofit?
-`DownloadManager` is a system service that handles long-running HTTP downloads in the background. 
-While Retrofit is perfect for REST API calls, it requires your app process to stay alive. `DownloadManager` handles network failures, device reboots, and background execution completely independently of your app. It should be used for downloading large files (like PDFs, video files, or OTA updates).
+## 8. What is the MediaStore API?
+An optimized index into media collections (audio, video, images) provided by the Android OS. It allows apps to query and retrieve media files created by other apps without requiring raw file path access.
+
+```kotlin
+// Querying MediaStore for images
+val cursor = contentResolver.query(
+    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+    projection, null, null, null
+)
+```
+
+## 9. How do you read/write files in the App-Specific Directory?
+Use `context.filesDir` for internal storage or `context.getExternalFilesDir()` for external storage. Files here are private to your app and are deleted when the app is uninstalled.
+
+```kotlin
+val file = File(context.filesDir, "my_file.txt")
+file.writeText("Hello World")
+```
+
+## 10. What is the Storage Access Framework (SAF)?
+A system UI that allows users to browse and pick documents or files across all of their preferred document storage providers (like Google Drive or local storage) without the app needing broad storage permissions.
+
+```kotlin
+// Launching SAF picker
+val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+    addCategory(Intent.CATEGORY_OPENABLE)
+    type = "application/pdf"
+}
+startActivityForResult(intent, REQUEST_CODE)
+```
+
+## 11. What is the difference between Internal and External Storage?
+- **Internal**: Always available, entirely private to the app. Cleared on uninstall.
+- **External**: Can be removable (SD card), historically public (though restricted by Scoped Storage now). Cleared on uninstall if stored in app-specific directories.
+
+## 12. How do you handle Runtime Permissions in Android?
+Since Android 6.0 (API 23), dangerous permissions (like Camera or Location) must be requested at runtime, rather than just declared in the manifest.
+
+```kotlin
+// Requesting permission using Activity Result API
+val requestPermissionLauncher = registerForActivityResult(RequestPermission()) { isGranted ->
+    if (isGranted) { /* use camera */ }
+}
+requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+```
+
+## 13. What is `SharedPreferences`?
+A legacy, synchronous API for storing small amounts of primitive data as key-value pairs in an XML file on the device.
+
+```kotlin
+val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+prefs.edit().putString("username", "Alice").apply() // apply() is async, commit() is sync
+```
+
+## 14. Why is DataStore replacing SharedPreferences?
+SharedPreferences parses the XML file on the UI thread, which can cause ANRs (Application Not Responding). DataStore uses Coroutines/Flow, runs completely asynchronously on background threads, and is safe from runtime exceptions.
+
+## 15. How do you check if a device is connected to the internet?
+Use `ConnectivityManager` and `NetworkCapabilities` to check if an active network exists and has the `NET_CAPABILITY_INTERNET` transport.
+
+```kotlin
+val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+val network = manager.activeNetwork
+val capabilities = manager.getNetworkCapabilities(network)
+val isConnected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+```
+
+## 16. What is the difference between `apply()` and `commit()` in SharedPreferences?
+- `apply()`: Saves the data to memory immediately, then writes it to disk asynchronously in the background. Does not return a boolean.
+- `commit()`: Writes the data to disk synchronously. Returns a boolean indicating success. Can block the UI thread.
+
+## 17. How do you serialize an object in Kotlin?
+Use Kotlinx Serialization (`@Serializable`), Gson, or Moshi. They convert Kotlin data classes into JSON strings for network transmission or local storage.
+
+```kotlin
+@Serializable
+data class User(val name: String)
+val json = Json.encodeToString(User("Alice"))
+```
+
+## 18. What is the difference between Serializable and Parcelable in Android?
+- **Serializable**: A standard Java interface. Uses Reflection, which makes it very slow and creates a lot of garbage collection overhead.
+- **Parcelable**: An Android-specific interface. Requires writing boilerplate to explicitly state how to pack and unpack the object. It is much faster and highly optimized for IPC (Inter-Process Communication).
+
+## 19. How do you easily implement Parcelable in Kotlin?
+Use the `@Parcelize` annotation from the `kotlin-parcelize` plugin. The compiler automatically generates the packing/unpacking boilerplate.
+
+```kotlin
+@Parcelize
+data class User(val id: Int, val name: String) : Parcelable
+```
+
+## 20. What is WebSocket?
+A communication protocol providing full-duplex, real-time communication channels over a single TCP connection. Often used in Android for chat applications or live data feeds. OkHttp has built-in support for WebSockets.

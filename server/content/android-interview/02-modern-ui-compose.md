@@ -1,74 +1,211 @@
 ---
-title: "Modern UI Development (Jetpack Compose & Views)"
-description: "Transitioning from XML to declarative UI with Jetpack Compose."
+title: "Modern UI & Jetpack Compose"
+description: "Declarative UI, State management, Modifiers, and Recomposition."
 ---
 
-## 16. What is Jetpack Compose, and how does it differ from the traditional XML View system?
-Jetpack Compose is Android’s modern toolkit for building native UI. 
-- **XML System**: Uses an imperative approach (mutating state using `findViewById` and setters like `setText`). UI is defined in XML files separate from the logic.
-- **Compose**: Uses a declarative approach. UI is defined purely in Kotlin using `@Composable` functions. The UI automatically updates (recomposes) when the underlying state changes.
+## 1. What is Jetpack Compose?
+Jetpack Compose is Android's modern toolkit for building native UI. It simplifies and accelerates UI development using a declarative, functional approach rather than the traditional XML imperative approach.
 
-## 17. What is dynamic recomposition in Jetpack Compose, and how does Compose optimize it?
-Recomposition is the process of calling your composable functions again when inputs/state change to update the UI.
-Compose optimizes this by:
-- **Skipping**: It skips recomposing functions if their parameters haven't changed.
-- **Positional Memoization**: It tracks composables based on their call location in the source code.
-- **Parallelization**: Recomposition can happen in parallel in the background.
+```kotlin
+@Composable
+fun Greeting(name: String) {
+    Text(text = "Hello $name!")
+}
+```
 
-## 18. Explain the difference between `remember` and `rememberSaveable` in Compose.
-- **`remember`**: Stores an object in the composition and returns the stored value. It survives recompositions but is lost if the activity is recreated (e.g., screen rotation).
-- **`rememberSaveable`**: Similar to `remember`, but it automatically saves the state into a `Bundle`. It survives activity recreation (configuration changes) and system-initiated process death.
+## 2. What is Declarative UI vs Imperative UI?
+- **Imperative (XML)**: You manually mutate the UI state (e.g., `textView.setText("Hello")`, `button.setVisibility(GONE)`).
+- **Declarative (Compose)**: You describe what the UI should look like for a given state. When the state changes, the UI automatically regenerates (recomposes) to reflect it.
 
-## 19. What are `SideEffect`, `LaunchedEffect`, and `DisposableEffect` in Jetpack Compose?
-Because composables should be side-effect free, Compose provides specialized effect handlers:
-- **`LaunchedEffect`**: Runs a suspend function in the scope of the composable. Cancels the coroutine if the composable leaves the composition.
-- **`SideEffect`**: Publishes Compose state to non-Compose code. Runs after every successful recomposition.
-- **`DisposableEffect`**: Used for side effects that require cleanup (e.g., registering a callback). Provides an `onDispose` block that runs when the composable leaves the composition.
+## 3. What is a `@Composable` function?
+A function annotated with `@Composable` tells the Compose compiler that this function is meant to convert data into UI. They can only be called from other composable functions.
 
-## 20. What is `CompositionLocal`, and when should you use it?
-`CompositionLocal` is a tool for passing data down through the Composition implicitly without having to pass it explicitly as parameters to every composable function.
-It is ideal for cross-cutting concerns like Themes, Colors, Typography, or a generic context (like `LocalContext.current`).
+```kotlin
+@Composable
+fun UserProfile(user: User) {
+    Column {
+        Text(user.name)
+        Text(user.bio)
+    }
+}
+```
 
-## 21. What is the `ViewHolder` pattern, and why is `RecyclerView` preferred over `ListView`?
-The `ViewHolder` pattern stores references to child views (like `TextView`s) inside a list item layout, preventing costly `findViewById()` calls during scrolling.
-`RecyclerView` forces the use of this pattern and provides a highly flexible architecture (LayoutManagers, ItemAnimators) compared to the rigid, legacy `ListView`.
+## 4. What is Recomposition?
+When the state (data) that a Composable function reads changes, Compose re-executes that function with the new data. Compose intelligently skips recomposing functions whose inputs have not changed (Smart Recomposition).
 
-## 22. How do `DiffUtil` and `ListAdapter` improve `RecyclerView` performance?
-`DiffUtil` is a utility class that calculates the difference between two lists and outputs a list of update operations that convert the first list into the second. 
-Used via `ListAdapter`, it calculates these diffs on a background thread and automatically dispatches granular updates (`notifyItemInserted`, `notifyItemChanged`), resulting in smooth animations and avoiding the expensive `notifyDataSetChanged()`.
+```kotlin
+@Composable
+fun Counter() {
+    var count by remember { mutableStateOf(0) } // State triggers recomposition
+    Button(onClick = { count++ }) {
+        Text("Count: $count") // Only this Button recomposes when count changes
+    }
+}
+```
 
-## 23. What are `dp`, `sp`, and `px` in Android layout design?
-- **px (Pixels)**: Actual screen pixels. Highly discouraged because absolute size varies drastically across devices with different pixel densities.
-- **dp (Density-independent Pixels)**: A virtual pixel unit that scales proportionally based on the screen's physical density. 1dp = 1px on a 160 dpi screen.
-- **sp (Scale-independent Pixels)**: Similar to `dp`, but also scales based on the user's system-wide font size preferences. Used exclusively for text.
+## 5. What is `remember` in Compose?
+`remember` caches the value produced by a calculation during initial composition. During recomposition, it returns the cached value, preventing the value from being reset on every recomposition.
 
-## 24. What is `ConstraintLayout`, and what performance advantages does it offer over nested layouts?
-`ConstraintLayout` allows you to create large and complex layouts with a flat view hierarchy. 
-Nested layouts (e.g., `LinearLayout` inside `RelativeLayout`) require multiple measure and layout passes by the system, degrading performance. `ConstraintLayout` solves this by calculating all positions mathematically in a single flat hierarchy.
+```kotlin
+@Composable
+fun RandomNumber() {
+    // Generates once, survives recomposition
+    val num = remember { (0..100).random() } 
+    Text("Number: $num")
+}
+```
 
-## 25. How do you create custom views and handle custom drawing (`onMeasure`, `onLayout`, `onDraw`)?
-To create a custom view in the legacy system:
-1. Extend `View` or `ViewGroup`.
-2. Override `onMeasure()` to determine the size requirements of the view based on `MeasureSpec` constraints.
-3. Override `onLayout()` (only for ViewGroups) to assign sizes and positions to child views.
-4. Override `onDraw()` using a `Canvas` and `Paint` to draw custom graphics directly onto the screen.
+## 6. What is `mutableStateOf`?
+It creates an observable `MutableState<T>`. When the value changes, Compose automatically schedules a recomposition for any Composable function that reads this state.
 
-## 26. What are `StateFlow` and `SharedFlow`, and how do you collect them safely in Compose UI?
-They are hot Kotlin flows. `StateFlow` holds state (requires an initial value and emits the latest to new collectors), while `SharedFlow` is used for events (emits to all active subscribers).
-In Compose, you safely collect them using `collectAsStateWithLifecycle()`, which automatically pauses collection when the UI is in the background, saving battery and preventing crashes.
+```kotlin
+// Idiomatic usage combining remember and mutableStateOf
+var text by remember { mutableStateOf("") }
+TextField(value = text, onValueChange = { text = it })
+```
 
-## 27. How does lazy loading work in Compose (`LazyColumn` vs `LazyRow`)?
-`LazyColumn` (vertical) and `LazyRow` (horizontal) are the Compose equivalents to `RecyclerView`. They only compose and lay out items that are currently visible on the screen. As the user scrolls, items leaving the screen are discarded, and new items are composed, keeping memory usage minimal.
+## 7. What is the difference between `remember` and `rememberSaveable`?
+- `remember`: Survives recomposition, but is destroyed across configuration changes (like screen rotation).
+- `rememberSaveable`: Survives recomposition AND configuration changes by saving the data in a `Bundle`.
 
-## 28. What is `ViewBinding`, and how does it differ from `DataBinding`?
-- **ViewBinding**: Generates a binding class for each XML layout, allowing type-safe and null-safe access to views without `findViewById`. It only binds views to code.
-- **DataBinding**: An older, heavier library that includes ViewBinding features but also allows binding data directly inside the XML layout (e.g., `android:text="@{user.name}"`).
+```kotlin
+// Survives screen rotation
+var text by rememberSaveable { mutableStateOf("") }
+```
 
-## 29. What is the purpose of `Modifier` in Jetpack Compose?
-`Modifier`s are used to decorate or add behavior to UI elements. They allow you to change a composable's size, layout, appearance (padding, background), or add high-level interactions like making it clickable, scrollable, or draggable. Order matters heavily when applying modifiers.
+## 8. What are Modifiers in Compose?
+Modifiers allow you to decorate or augment a composable (e.g., change size, add padding, background, or click listeners). Order matters! Modifiers are applied sequentially.
 
-## 30. How do you handle deep linking and navigation in Jetpack Compose?
-Using the Navigation Compose library:
-1. Define a `NavHost` and `rememberNavController()`.
-2. Map string routes to composable screens.
-3. For deep links, add a `deepLinks` argument to a `composable` destination defining the URI pattern (e.g., `uriPattern = "https://example.com/details/{id}"`). The system automatically handles parsing arguments and routing the user to the correct screen.
+```kotlin
+Text(
+    text = "Hello",
+    modifier = Modifier
+        .background(Color.Blue) // Applied first
+        .padding(16.dp)         // Applied second (padding inside blue background)
+        .clickable { /* click */ }
+)
+```
+
+## 9. How does Layout work in Compose?
+The core layout components are `Column` (vertical), `Row` (horizontal), and `Box` (stacking elements on top of each other, like FrameLayout).
+
+```kotlin
+Row(
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+) {
+    Text("Left")
+    Text("Right")
+}
+```
+
+## 10. What is State Hoisting?
+A pattern of moving state out of a composable to its caller to make the composable stateless. This makes the composable easier to test, highly reusable, and strictly unidirectional.
+
+```kotlin
+// Stateless Composable
+@Composable
+fun CustomTextField(value: String, onValueChange: (String) -> Unit) {
+    TextField(value = value, onValueChange = onValueChange)
+}
+```
+
+## 11. What is Unidirectional Data Flow (UDF)?
+A design pattern where state flows down (from parent to child) and events flow up (from child to parent). State hoisting is the practical application of UDF in Compose.
+
+## 12. How do you handle lists in Compose?
+Use `LazyColumn` or `LazyRow`. They are the Compose equivalent of `RecyclerView`. They only compose and lay out items that are currently visible on the screen.
+
+```kotlin
+LazyColumn {
+    items(userList) { user ->
+        UserCard(user) // Only instantiated if visible
+    }
+}
+```
+
+## 13. What is a `SideEffect` in Compose?
+A side effect is a change to the state of the app that happens outside the scope of a composable function. Compose provides specific effect APIs to execute side effects safely.
+
+## 14. What is `LaunchedEffect`?
+A side effect API used to run suspend functions (Coroutines) inside a composable. It is launched when the composable enters the composition and cancelled when it leaves.
+
+```kotlin
+@Composable
+fun ProfileScreen(userId: String) {
+    // Re-runs the coroutine only if userId changes
+    LaunchedEffect(userId) {
+        viewModel.fetchUserData(userId)
+    }
+}
+```
+
+## 15. What is `DisposableEffect`?
+Used for side effects that require cleanup when the composable leaves the composition (e.g., registering and unregistering a listener).
+
+```kotlin
+DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event -> /* handle */ }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose {
+        lifecycleOwner.lifecycle.removeObserver(observer) // Cleanup
+    }
+}
+```
+
+## 16. What is `produceState`?
+It converts non-Compose state (like LiveData or RxJava) into Compose state. Under the hood, it is a `LaunchedEffect` that pushes values into a `MutableState`.
+
+```kotlin
+val uiState by produceState(initialValue = "Loading") {
+    value = networkRepo.fetchData() // Suspending call
+}
+```
+
+## 17. How do you use ViewModels in Compose?
+Using the `viewModel()` or `hiltViewModel()` functions. They retain the ViewModel across recompositions and configuration changes.
+
+```kotlin
+@Composable
+fun MyScreen(viewModel: MyViewModel = viewModel()) {
+    // collectAsState converts StateFlow to Compose State
+    val state by viewModel.uiState.collectAsState() 
+    Text(state.title)
+}
+```
+
+## 18. What is `CompositionLocal`?
+A tool for passing data down through the composition implicitly without explicitly passing it through composable parameters. Used for themes, context, or window size.
+
+```kotlin
+// Accessing context implicitly
+val context = LocalContext.current
+Toast.makeText(context, "Hello", Toast.LENGTH_SHORT).show()
+```
+
+## 19. How do you implement Navigation in Compose?
+Using the Navigation Compose library. You define a `NavHost` and map string routes to composable screens.
+
+```kotlin
+val navController = rememberNavController()
+NavHost(navController, startDestination = "home") {
+    composable("home") { HomeScreen(navController) }
+    composable("details/{id}") { backStackEntry -> 
+        DetailsScreen(backStackEntry.arguments?.getString("id")) 
+    }
+}
+```
+
+## 20. How is theming handled in Compose?
+Theming is strictly programmatic (no `styles.xml`). You define a `MaterialTheme` wrapper composable that provides a custom configuration of Colors, Typography, and Shapes to all its children via `CompositionLocal`.
+
+```kotlin
+@Composable
+fun MyAppTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colors = lightColors(primary = Color.Blue),
+        typography = Typography(),
+        content = content
+    )
+}
+```

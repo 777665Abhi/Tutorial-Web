@@ -12,6 +12,12 @@ async function getTopicsForCategory(category: string) {
   }
 }
 
+interface Topic {
+  slug: string;
+  title: string;
+  description: string;
+}
+
 export default async function CategoryPage({ params }: { params: { category: string } }) {
   const topics = await getTopicsForCategory(params.category);
   
@@ -33,7 +39,7 @@ export default async function CategoryPage({ params }: { params: { category: str
       </p>
       
       <div className="topic-list">
-        {topics.map((topic: any) => (
+        {topics.map((topic: Topic) => (
           <Link key={topic.slug} href={`/tutorials/${params.category}/${topic.slug}`} className="glass-panel topic-card">
             <h2>{topic.title}</h2>
             <p>{topic.description}</p>

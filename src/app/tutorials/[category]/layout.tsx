@@ -7,9 +7,14 @@ async function getTopicsForCategory(category: string) {
     });
     if (!res.ok) return [];
     return await res.json();
-  } catch (e) {
+  } catch {
     return [];
   }
+}
+
+interface Topic {
+  slug: string;
+  title: string;
 }
 
 export default async function CategoryLayout({
@@ -38,7 +43,7 @@ export default async function CategoryLayout({
               Course Home
             </Link>
           </li>
-          {topics.map((topic: any) => (
+          {topics.map((topic: Topic) => (
             <li key={topic.slug}>
               <Link href={`/tutorials/${params.category}/${topic.slug}`} className="sidebar-link">
                 {topic.title}

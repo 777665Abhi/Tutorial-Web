@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,14 +20,16 @@ export default function RootLayout({
             <span className="text-gradient" style={{ marginRight: '0.25rem' }}>Tech</span>Mastery
           </div>
           <div className="nav-links flex gap-2">
-            <a href="/">Home</a>
-            <a href="/tutorials/android">Android</a>
-            <a href="/tutorials/kotlin">Kotlin</a>
-            <a href="/tutorials/flutter">Flutter</a>
-            <a href="/tutorials/java">Java</a>
+            <Link href="/">Home</Link>
+            <Link href="/tutorials/android">Android</Link>
+            <Link href="/tutorials/kotlin">Kotlin</Link>
+            <Link href="/tutorials/flutter">Flutter</Link>
+            <Link href="/tutorials/java">Java</Link>
+            <Link href="/tutorials/dsa">DSA</Link>
+            <Link href="/tutorials/python">Python</Link>
           </div>
           <div>
-            <a href="#" className="btn btn-primary">Login</a>
+            <Link href="#" className="btn btn-primary">Login</Link>
           </div>
         </nav>
         <main>

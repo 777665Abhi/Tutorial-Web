@@ -8,7 +8,7 @@ async function getTutorialData(category: string, slug: string) {
     const res = await fetch(`http://127.0.0.1:3005/api/categories/${category}/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
-  } catch (e) {
+  } catch {
     return null;
   }
 }
