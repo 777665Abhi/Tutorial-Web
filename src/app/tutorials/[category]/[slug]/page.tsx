@@ -2,19 +2,10 @@ import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import './tutorial.css';
-
-async function getTutorialData(category: string, slug: string) {
-  try {
-    const res = await fetch(`http://127.0.0.1:3005/api/categories/${category}/${slug}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
+import { getTutorialData } from '@/lib/content';
 
 export default async function TutorialPage({ params }: { params: { category: string, slug: string } }) {
-  const data = await getTutorialData(params.category, params.slug);
+  const data = getTutorialData(params.category, params.slug);
   
   if (!data) {
     notFound();

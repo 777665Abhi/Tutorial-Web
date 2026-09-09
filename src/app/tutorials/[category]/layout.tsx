@@ -1,21 +1,5 @@
 import Link from 'next/link';
-
-async function getTopicsForCategory(category: string) {
-  try {
-    const res = await fetch(`http://127.0.0.1:3005/api/categories/${category}`, {
-      cache: 'no-store'
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-interface Topic {
-  slug: string;
-  title: string;
-}
+import { getTopicsForCategory, Topic } from '@/lib/content';
 
 export default async function CategoryLayout({
   children,
@@ -24,7 +8,7 @@ export default async function CategoryLayout({
   children: React.ReactNode;
   params: { category: string };
 }) {
-  const topics = await getTopicsForCategory(params.category);
+  const topics = getTopicsForCategory(params.category);
   
   const formatCategoryName = (cat: string) => {
     return cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');

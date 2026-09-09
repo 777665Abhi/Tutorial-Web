@@ -1,27 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-
-async function getTopicsForCategory(category: string) {
-  try {
-    const res = await fetch(`http://127.0.0.1:3005/api/categories/${category}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (e) {
-    console.error('Fetch error:', e);
-    return null;
-  }
-}
-
-interface Topic {
-  slug: string;
-  title: string;
-  description: string;
-}
+import { getTopicsForCategory, Topic } from '@/lib/content';
 
 export default async function CategoryPage({ params }: { params: { category: string } }) {
-  const topics = await getTopicsForCategory(params.category);
+  const topics = getTopicsForCategory(params.category);
   
-  if (!topics) {
+  if (!topics || topics.length === 0) {
     notFound();
   }
   
