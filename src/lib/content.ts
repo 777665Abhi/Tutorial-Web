@@ -77,3 +77,26 @@ export function getTutorialData(category: string, slug: string): TutorialData | 
     navigation: { prev, next }
   };
 }
+
+// Function to get all categories
+export function getAllCategories(): string[] {
+  if (!fs.existsSync(contentDirectory)) return [];
+  return fs.readdirSync(contentDirectory).filter(file => {
+    return fs.statSync(path.join(contentDirectory, file)).isDirectory();
+  });
+}
+
+// Function to get all topics across all categories for sitemap
+export function getAllTopics() {
+  const categories = getAllCategories();
+  const allTopics: { category: string, slug: string }[] = [];
+  
+  categories.forEach(category => {
+    const topics = getTopicsForCategory(category);
+    topics.forEach(topic => {
+      allTopics.push({ category, slug: topic.slug });
+    });
+  });
+  
+  return allTopics;
+}

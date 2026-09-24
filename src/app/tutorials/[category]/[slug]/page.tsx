@@ -1,8 +1,19 @@
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import './tutorial.css';
 import { getTutorialData } from '@/lib/content';
+
+export async function generateMetadata({ params }: { params: { category: string, slug: string } }): Promise<Metadata> {
+  const data = getTutorialData(params.category, params.slug);
+  if (!data) return {};
+  
+  return {
+    title: `${data.title} | TechMastery`,
+    description: data.description || `Learn about ${data.title} in our comprehensive tutorial.`,
+  };
+}
 
 export default async function TutorialPage({ params }: { params: { category: string, slug: string } }) {
   const data = getTutorialData(params.category, params.slug);
@@ -17,8 +28,23 @@ export default async function TutorialPage({ params }: { params: { category: str
     return cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
   
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": data.title,
+    "description": data.description,
+    "author": {
+      "@type": "Organization",
+      "name": "TechMastery"
+    }
+  };
+  
   return (
     <article className="tutorial-content glass-panel" style={{ padding: '3rem 4rem', maxWidth: '1000px', margin: '0 auto', borderRadius: '24px' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       
       {/* Breadcrumbs */}
       <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', backgroundColor: '#F8F9FA', padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
