@@ -54,6 +54,43 @@ Both accumulate a value starting from the first element.
 val nums = listOf(1, 2, 3)
 val sum = nums.reduce { acc, i -> acc + i } // 6
 val stringSum = nums.fold("Start:") { acc, i -> "$acc $i" } // "Start: 1 2 3"
+
+// Fold example:
+val result = listOf(1, 2, 3).fold("") { acc, i -> acc + i }
+// The accumulator 'acc' is initially "" (String).
+// Step 1: acc="", i=1 -> acc becomes "1"
+// Step 2: acc="1", i=2 -> acc becomes "12"
+// Step 3: acc="12", i=3 -> acc becomes "123"
+// Final result: "123" (Type is String, same as initial value)
+
+// Reduce example:
+val result2 = listOf(1, 2, 3).reduce { acc, i -> acc + i }
+// The accumulator 'acc' is initially the first element, 1 (Int).
+// Step 1: acc=1, i=2 -> acc becomes 3
+// Step 2: acc=3, i=3 -> acc becomes 6
+// Final result: 6 (Type is Int, same as collection elements)
+
+// In first example there is 3 steps and for example 2 there is 2 steps. Why?
+// Because in first example the accumulator is initially empty string, but in second example the accumulator is the first element of the collection. 
+// In the first example the accumulator is initialized with an empty string "", so it takes one extra step to add the first element to the accumulator. 
+// In the second example the accumulator is initialized with the first element of the collection, so it takes one less step to add the remaining elements to the accumulator.
+
+
+// Fold example:
+val result = listOf(1, 2, 3).fold("") { acc, i -> acc + i }
+// The accumulator 'acc' is initially "" (String).
+// Step 1: acc="", i=1 -> acc becomes "1"
+// Step 2: acc="1", i=2 -> acc becomes "12"
+// Step 3: acc="12", i=3 -> acc becomes "123"
+// Final result: "123" (Type is String, same as initial value)
+
+// Reduce example:
+val result2 = listOf(1, 2, 3).reduce { acc, i -> acc + i }
+// The accumulator 'acc' is initially the first element, 1 (Int).
+// Step 1: acc=1, i=2 -> acc becomes 3
+// Step 2: acc=3, i=3 -> acc becomes 6
+// Final result: 6 (Type is Int, same as collection elements)
+
 ```
 
 ## 7. What does `groupBy` do?
@@ -74,6 +111,37 @@ val result = listOf(1, 2, 3, 4).asSequence()
     .map { it * 2 }
     .filter { it > 5 }
     .toList()
+
+// Iterable (Eager evaluation):
+val numbers = listOf(1, 2, 3, 4)
+val doubled = numbers.map { println("Doubling $it"); it * 2 } // Prints for all 4 elements immediately
+val filtered = doubled.filter { println("Filtering $it"); it > 3 } // Prints for all 4 elements immediately
+// Execution:
+// Doubling 1
+// Doubling 2
+// Doubling 3
+// Doubling 4
+// Filtering 2
+// Filtering 4
+// Filtering 6
+// Filtering 8
+// Result: [4, 6, 8]
+
+// Sequence (Lazy evaluation):
+val numbers = listOf(1, 2, 3, 4).asSequence()
+val doubled = numbers.map { println("Doubling $it"); it * 2 } // No output yet
+val filtered = doubled.filter { println("Filtering $it"); it > 3 } // No output yet
+val result = filtered.toList() // Output only when consumed
+// Execution:
+// Doubling 1
+// Filtering 2
+// Doubling 2
+// Filtering 4
+// Doubling 3
+// Filtering 6
+// Doubling 4
+// Filtering 8
+// Result: [4, 6, 8]
 ```
 
 ## 9. How do you create an array of primitives efficiently?

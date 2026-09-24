@@ -2,6 +2,11 @@
 title: "Coroutines & Concurrency"
 description: "Master suspend functions, dispatchers, and structured concurrency."
 ---
+Explain Coroutine 
+
+
+
+
 
 ## 1. What are Coroutines in Kotlin?
 Coroutines are lightweight threads. They are non-blocking, meaning they can suspend execution without blocking the underlying thread, allowing that thread to do other work.
@@ -30,7 +35,7 @@ runBlocking {
 ```
 
 ## 3. What is a `suspend` function?
-A function that can be paused (suspended) and resumed later without blocking the thread. It can only be called from a coroutine or another `suspend` function.
+A function that can be paused (suspended) and resumed later without blocking the  thread. It can only be called from a coroutine or another `suspend` function.
 
 ```kotlin
 suspend fun fetchNetworkData(): String {
@@ -60,6 +65,11 @@ Functions that create new coroutines.
 ```kotlin
 val job = GlobalScope.launch { ... }
 val deferred = GlobalScope.async { return@async 42 }
+// you can use 
+        launch is used for fire and forget (return job)
+        async is used for returning a value (return Deferred)
+
+
 ```
 
 ## 6. How do you retrieve the result of an `async` coroutine?
@@ -110,7 +120,41 @@ It determines which thread or thread pool the coroutine will execute on.
 launch(Dispatchers.IO) {
     // Safe to read a database here
 }
+
+GlobalScope.launch(Dispatchers.IO) {
+    // This runs on an IO thread pool
+    val data = performDatabaseQuery()
+    
+    withContext(Dispatchers.Main) {
+        // Now updating UI safely on the Main thread
+        updateUi(data)
+    }
+}
+
 ```
+## when to use GlobalScope.launch, viewModelScope, lifecycleScope, lifeCycleScope, lifecycleScope.launch, lifecycleScope.async, coroutineScope, runBlocking 
+
+`GlobalScope.launch` launches a coroutine that is not tied to any `CoroutineScope`. It lives for the entire application lifetime or until the application is killed. It doesn't respect structured concurrency, meaning if the coroutine throws an uncaught exception, it won't be caught by any parent scope, and if the coroutine is never cancelled, it can lead to resource leaks.
+
+`viewModelScope.launch` launches a coroutine within the `ViewModel`'s scope. This scope is tied to the `ViewModel`'s lifecycle. When the `ViewModel` is cleared (typically when the associated Fragment/Activity is destroyed or the ViewModel is garbage collected), the `viewModelScope` is automatically cancelled, and all coroutines launched within it are also cancelled. This provides structured concurrency and prevents memory leaks.
+
+`lifecycleScope` is a scope tied to the lifecycle of a `LifecycleOwner` (e.g., `Fragment`, `Activity`). When the lifecycle enters the `DESTROYED` state, the scope is cancelled, and all coroutines launched within it are also cancelled.
+
+`lifecycleScope.launch` launches a coroutine within the `lifecycleScope`.
+
+`lifecycleScope.async` launches a coroutine within the `lifecycleScope` and returns a `Deferred<T>` which holds the future result.
+
+`coroutineScope` creates a new coroutine scope that is tied to the current coroutine. When the scope is cancelled or destroyed, all coroutines inside it are automatically cancelled.
+
+`runBlocking` creates a coroutine scope that is tied to the current coroutine. When the scope is cancelled or destroyed, all coroutines inside it are automatically cancelled.
+
+**Rule of thumb:**
+
+Use `GlobalScope.launch` sparingly and only when you genuinely need a coroutine that lives for the entire application lifetime or for tasks that run independently of any specific UI component (e.g., background sync that should continue even if the user navigates away).
+
+In Android, it's generally discouraged for UI-related tasks because it lacks structured concurrency and can lead to memory leaks or unexpected behavior if not carefully managed.
+
+
 
 ## 10. How do you switch threads inside a coroutine?
 Using the `withContext(Dispatcher)` function. It suspends until the block completes on the new dispatcher, then resumes on the original dispatcher.
@@ -177,7 +221,8 @@ suspend fun safeWork() = supervisorScope {
 ```
 
 ## 16. What is the difference between `delay()` and `Thread.sleep()`?
-`Thread.sleep()` blocks the actual OS thread, meaning no other coroutines can run on it. `delay()` suspends the coroutine, freeing up the thread to execute other coroutines.
+`Thread.sleep()` blocks the actual OS thread, meaning no other coroutines can run on it. 
+`delay()` suspends the coroutine, freeing up the thread to execute other coroutines.
 
 ```kotlin
 // Thread.sleep(1000) -> Blocks entire thread
