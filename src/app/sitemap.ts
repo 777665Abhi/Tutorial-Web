@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { getAllTopics, getAllCategories } from '@/lib/content';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://tutorial-web-five.vercel.app'; // Replace with custom domain later
+  const baseUrl = 'https://green-coast-083425a10.4.azurestaticapps.net'; // Replace with custom domain later
   
   // Home page
   const routes = [

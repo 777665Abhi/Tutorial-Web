@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://tutorial-web-five.vercel.app'; // Replace with custom domain later
+  const baseUrl = 'https://green-coast-083425a10.4.azurestaticapps.net'; // Replace with custom domain later
 
   return {
     rules: {
