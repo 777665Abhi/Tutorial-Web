@@ -39,11 +39,15 @@ fun cachedLength(): (String) -> Int {
 
 ## 4. What is the difference between `first`, `firstOrNull`, and `single`?
 
-`first` returns the first matching element or throws if none exists. `firstOrNull` returns null when there is no match. `single` requires exactly one matching element and throws when there are zero or multiple matches. Choose the function that expresses the expected cardinality.
+`first` returns the first matching element or throws if none exists. 
+`firstOrNull` returns null when there is no match.
+`single` requires exactly one matching element and throws when there are zero or multiple matches.
+Choose the function that expresses the expected cardinality.
 
 ## 5. How do you make a Kotlin API readable and testable?
 
-Keep side effects at boundaries, pass dependencies explicitly, return immutable interfaces, use domain types instead of ambiguous primitives, and keep functions small enough to test independently. Prefer named arguments and sealed result types when they make invalid states harder to represent.
+Keep side effects at boundaries, pass dependencies explicitly, return immutable interfaces, use domain types instead of ambiguous primitives, and keep functions small enough to test independently.
+Prefer named arguments and sealed result types when they make invalid states harder to represent.
 
 ## 6. What should you consider when optimizing Kotlin code?
 
@@ -51,30 +55,152 @@ Measure first. Consider algorithmic complexity before micro-optimizations, avoid
 
 ## 7. How do you measure the execution time of a block of code?
 You can use the built-in `measureTimeMillis { }` or `measureNanoTime { }` blocks.
+- `measureTimeMillis` returns the time in milliseconds.
+- `measureNanoTime` returns the time in nanoseconds.
+
+```kotlin
+import kotlin.system.measureTimeMillis
+
+fun main() {
+    val time = measureTimeMillis {
+        // Code to measure
+        Thread.sleep(1000)
+    }
+    println("Execution time: $time ms")
+}
+
+// Output: Execution time: 1000 ms
+```
 
 ## 8. How do you destructure a `Map` in a `for` loop?
 You can loop through it using `for ((key, value) in map) { }`.
 
+```kotlin
+fun main() {
+    val map = mapOf("a" to 1, "b" to 2, "c" to 3)
+    for ((key, value) in map) {
+        println("$key = $value")
+    }
+}
+
+// Output:
+a = 1
+b = 2
+c = 3
+```
+
 ## 9. How do you execute a block of code only if a value is not null?
 Use the `let` scope function combined with the safe call operator: `name?.let { print(it) }`.
+
+```kotlin
+fun main() {
+    val name: String? = "John"
+    name?.let { println(it) }
+}
+
+// Output: John
+```
 
 ## 10. How do you repeat an action a specific number of times?
 You can use the built-in `repeat(times) { }` function.
 
+```kotlin
+fun main() {
+    repeat(3) { println("Hello") }
+}
+
+// Output:
+Hello
+Hello
+Hello
+```
+
 ## 11. What does the `requireNotNull()` function do?
-It checks if a value is null. If it is, it throws an `IllegalArgumentException`; otherwise, it returns the non-null value.
+It checks if a value is null. If it is, it throws an `IllegalArgumentException`; 
+otherwise, it returns the non-null value.
+
+```kotlin
+fun main() {
+    val name: String? = null
+    requireNotNull(name) { "Name cannot be null" }
+}
+
+// Output: Exception in thread "main" java.lang.IllegalArgumentException: Name cannot be null
+```
 
 ## 12. How do you flatten a list of lists?
 Use the `flatten()` method. To map and then flatten, use `flatMap()`.
 
+```kotlin
+fun main() {
+    val listOfLists = listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9))
+    val flatList = listOfLists.flatten()
+    println(flatList)
+}
+
+// Output: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+```
+
 ## 13. How do you gracefully handle multiple `if-else` checks in Kotlin?
 Use the `when` expression, which is much cleaner and forces exhaustiveness when used with sealed classes or enums.
 
+```kotlin
+fun main() {
+    val x = 1
+    when (x) {
+        1 -> println("One")
+        2 -> println("Two")
+        else -> println("Other")
+    }
+}
+
+// Output: One
+```
+
 ## 14. How can you remove all nulls from a collection?
 You can use the `filterNotNull()` standard library function.
+Def : `filterNotNull()` is a higher-order function that returns a list containing only the non-null elements of the original list. 
+It is a terminal operation that processes the entire collection and returns a new list without the null elements.
+
+```kotlin
+fun main() {
+    val listWithNulls = listOf(1, 2, null, 3, 4, null, 5)
+    val listWithoutNulls = listWithNulls.filterNotNull()
+    println(listWithoutNulls)
+}
+
+// Output: [1, 2, 3, 4, 5]
+```
 
 ## 15. How do you return early from a lambda?
 You use a labeled return, such as `return@forEach` or `return@map`.
 
+```kotlin
+fun main() {
+    val numbers = listOf(1, 2, 3, 4, 5)
+    numbers.forEach { number ->
+        if (number == 3) {
+            return@forEach // Skips the current iteration (number 3)
+        }
+        println(number)
+    }
+}
+
+// Output:
+1
+2
+4
+5
+```
+
 ## 16. What is the standard way to create an empty List?
 Use `emptyList<T>()`. It is memory efficient because it reuses a single instance of an empty list across your app.
+
+```kotlin
+fun main() {
+    val emptyList = emptyList<String>()
+    println(emptyList)
+}
+
+// Output: []
+```

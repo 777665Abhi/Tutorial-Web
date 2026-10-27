@@ -4,17 +4,20 @@ description: "Higher-order functions, Lambdas, and collections processing."
 ---
 
 ## 1. Does Kotlin support Functional Programming?
-Yes, Kotlin supports both OOP and Functional Programming paradigms. Functions are first-class citizens, meaning they can be passed as arguments, returned from other functions, and stored in variables.
+Yes. Kotlin supports both Object-Oriented Programming (OOP) and Functional Programming (FP). In FP style, functions are treated as first-class citizens, meaning they can be stored in variables, passed as arguments to other functions, and returned from functions.
 
 ```kotlin
+// Defining a function that takes two Integers and returns an Integer
 val multiply: (Int, Int) -> Int = { a, b -> a * b }
-println(multiply(2, 4)) // 8
+
+println(multiply(2, 4)) // Output: 8
 ```
 
 ## 2. What is a Higher-Order Function?
-A function that takes another function as a parameter or returns a function.
+A higher-order function is a function that accepts another function as an argument or returns a function as its result.
 
 ```kotlin
+// Function that accepts another function as an argument
 fun operate(x: Int, y: Int, op: (Int, Int) -> Int): Int {
     return op(x, y)
 }
@@ -22,7 +25,7 @@ val result = operate(10, 5) { a, b -> a - b } // Result: 5
 ```
 
 ## 3. What is trailing lambda syntax?
-If the last parameter of a higher-order function is a function, you can place the lambda expression outside the parentheses when calling it.
+When the last argument of a function is itself a lambda, Kotlin lets you move it outside the round brackets. It's purely a shortcut to make the code cleaner to read.
 
 ```kotlin
 // Instead of this:
@@ -33,7 +36,7 @@ items.fold(0) { acc, i -> acc + i }
 ```
 
 ## 4. What is the `it` keyword?
-If a lambda expression has exactly one parameter, you do not need to explicitly declare it. Kotlin implicitly names it `it`.
+If a lambda takes only one input, you don't need to name that input yourself — Kotlin automatically calls it `it`.
 
 ```kotlin
 val nums = listOf(1, 2, 3)
@@ -41,19 +44,19 @@ val doubled = nums.map { it * 2 } // Equivalent to { x -> x * 2 }
 ```
 
 ## 5. How do you return from a lambda?
-Lambdas implicitly return the value of their last expression. If you need to exit early, you must use a qualified return (returning to the label).
+A lambda automatically gives back the value of its last line — you don't need a `return` for that. But if you want to stop early (like skipping to the next loop item), you write `return@label`.
 
 ```kotlin
 fun foo() {
     listOf(1, 2, 3).forEach {
-        if (it == 2) return@forEach // Continues loop
+        if (it == 2) return@forEach //  loop
         println(it)
     }
 }
 ```
 
 ## 6. What happens if you use a naked `return` inside a lambda?
-If the lambda is passed to an `inline` function (like `forEach`), a naked `return` will return out of the *enclosing function* completely (non-local return).
+Be careful here: if the lambda belongs to an `inline` function (like `forEach`), a plain `return` (without `@label`) doesn't just skip the loop — it exits the whole outer function immediately.
 
 ```kotlin
 fun foo() {
@@ -66,7 +69,7 @@ fun foo() {
 ```
 
 ## 7. What is an Anonymous Function?
-Unlike a lambda, an anonymous function uses the `fun` keyword and allows specifying the return type explicitly. A naked `return` inside it only returns from the anonymous function itself.
+It's basically a lambda's more formal sibling — written using the `fun` keyword, and you can state its return type explicitly. The key difference: a plain `return` inside it only exits that anonymous function, nothing more.
 
 ```kotlin
 val isEven = fun(x: Int): Boolean {
@@ -75,14 +78,14 @@ val isEven = fun(x: Int): Boolean {
 ```
 
 ## 8. What are Function Types?
-Types that declare the signature of a function, e.g., `(Int, String) -> Boolean`. 
+A "function type" is just a way of describing what a function's inputs and output look like — for example, `(Int, String) -> Boolean` reads as "takes an Int and a String, gives back a Boolean."
 
 ```kotlin
 val check: (Int, String) -> Boolean = { id, name -> id > 0 && name.isNotBlank() }
 ```
 
 ## 9. What is a Receiver Type in function types?
-You can define a function type with a receiver `A.(B) -> C`. Inside the lambda, `this` refers to the receiver object of type `A`.
+Written as `A.(B) -> C`. It means: inside this lambda, `this` automatically refers to an object of type `A` — so you can call that object's methods directly, without typing its name.
 
 ```kotlin
 val buildString: StringBuilder.() -> Unit = {
@@ -91,7 +94,7 @@ val buildString: StringBuilder.() -> Unit = {
 ```
 
 ## 10. How is `apply` implemented?
-`apply` is a higher-order inline function that takes a receiver function. It calls the block and then returns `this`.
+`apply` simply runs the block of code you give it (where `this` is the object), and then hands the same object back to you. That's why you can keep chaining calls after it.
 
 ```kotlin
 inline fun <T> T.apply(block: T.() -> Unit): T {
@@ -101,7 +104,7 @@ inline fun <T> T.apply(block: T.() -> Unit): T {
 ```
 
 ## 11. What is Function Reference?
-You can pass an existing named function as a parameter instead of writing a new lambda, using the `::` operator.
+Instead of writing a fresh lambda, you can reuse a function that already exists by referring to it with `::`.
 
 ```kotlin
 fun isEven(x: Int) = x % 2 == 0
@@ -109,7 +112,7 @@ val evens = listOf(1, 2, 3, 4).filter(::isEven)
 ```
 
 ## 12. Can you return a function from a function?
-Yes. 
+Yes, no problem at all — a function can build and return another function.
 
 ```kotlin
 fun getMultiplier(factor: Int): (Int) -> Int {
@@ -120,7 +123,7 @@ println(timesTwo(5)) // 10
 ```
 
 ## 13. What is a Closure in Kotlin?
-A lambda or anonymous function can access and modify variables declared in its outer scope. This combination of a function and its captured variables is a closure.
+A closure is what you get when a lambda "remembers" and can even change a variable from outside its own scope. In short: the lambda plus the outside variables it reaches into.
 
 ```kotlin
 var sum = 0
@@ -128,7 +131,7 @@ listOf(1, 2, 3).forEach { sum += it } // Modifies 'sum' from outer scope
 ```
 
 ## 14. Are pure functions enforced in Kotlin?
-No. Kotlin does not enforce pure functions (functions with no side effects that always return the same output for the same input). It is up to the developer to adopt functional purity.
+No. A "pure function" is one that never causes side effects and always gives the same output for the same input. Kotlin doesn't force this on you — writing pure functions is just a good habit developers choose to follow.
 
 ```kotlin
 // Impure: Relies on outer state
@@ -140,7 +143,7 @@ fun add(a: Int, b: Int) = a + b
 ```
 
 ## 15. What is Currying?
-Currying transforms a function that takes multiple arguments into a sequence of functions that each take a single argument. (Not built into Kotlin, but can be implemented).
+Currying means breaking a function that takes multiple arguments into a chain of functions that each take just one argument at a time. Kotlin doesn't have this built in, but you can write it yourself.
 
 ```kotlin
 val add: (Int) -> (Int) -> Int = { a -> { b -> a + b } }
@@ -148,8 +151,8 @@ println(add(5)(3)) // 8
 ```
 
 ## 16. What is the difference between map and flatMap?
-- `map`: Transforms `[1, 2]` into `[[1, 1], [2, 2]]`.
-- `flatMap`: Transforms and flattens `[1, 2]` into `[1, 1, 2, 2]`.
+- `map`: transforms each item, but keeps the results nested — `[1, 2]` becomes `[[1, 1], [2, 2]]`.
+- `flatMap`: transforms each item *and* flattens the nested lists into one single list — `[1, 2]` becomes `[1, 1, 2, 2]`.
 
 ```kotlin
 val list = listOf(1, 2)
@@ -158,7 +161,7 @@ println(list.flatMap { listOf(it, it) }) // [1, 1, 2, 2]
 ```
 
 ## 17. How do you compose functions?
-You can create an extension function to chain functions logically.
+"Composing" means chaining two functions so the output of the first feeds straight into the second. You can write a small helper extension function to do this.
 
 ```kotlin
 infix fun <A, B, C> ((A) -> B).compose(other: (B) -> C): (A) -> C {
@@ -167,7 +170,7 @@ infix fun <A, B, C> ((A) -> B).compose(other: (B) -> C): (A) -> C {
 ```
 
 ## 18. What is Lazy Evaluation?
-Using `Sequence` instead of `Iterable`. A `Sequence` defers the computation until a terminal operation (like `toList()`) is called, preventing unnecessary memory allocation for intermediate steps.
+This happens when you use `Sequence` instead of a regular `Iterable`/`List`. A `Sequence` doesn't do any work right away — it waits until you ask for a final result (like calling `.toList()`), which avoids creating unnecessary intermediate lists in memory.
 
 ```kotlin
 val lazySeq = sequenceOf(1, 2, 3, 4).filter { 
@@ -177,7 +180,7 @@ val lazySeq = sequenceOf(1, 2, 3, 4).filter {
 ```
 
 ## 19. What is a type-safe builder?
-A DSL (Domain Specific Language) created using higher-order functions with receivers, allowing you to write structured, declarative code.
+This is how Kotlin builds DSLs (mini, purpose-built languages) using higher-order functions with receivers. It lets you write code that reads like structured markup, while still being plain, type-checked Kotlin underneath.
 
 ```kotlin
 html {
@@ -187,9 +190,9 @@ html {
 ```
 
 ## 20. What does `require` and `check` do?
-They are functional ways to enforce invariants.
-- `require(condition)` throws `IllegalArgumentException` if false.
-- `check(condition)` throws `IllegalStateException` if false.
+Both are quick, functional-style ways to validate conditions and fail fast if something's wrong:
+- `require(condition)` — throws `IllegalArgumentException` if false. Use it to validate inputs/arguments.
+- `check(condition)` — throws `IllegalStateException` if false. Use it to validate internal state.
 
 ```kotlin
 fun process(age: Int) {
